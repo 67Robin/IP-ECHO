@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 3000;
 // if later you put this behind a proxy (nginx, cloud, etc)
 app.set("trust proxy", true);
 
-// helper to get client IP (for now, just echo what Express sees)
+// helper to get client IP
 function getClientIp(req) {
   const xf = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
 
