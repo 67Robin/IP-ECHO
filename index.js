@@ -66,7 +66,7 @@ app.get("/geo", async (req, res) => {
 
 // Root (info)
 app.get("/", (req, res) => {
-  res.send("IP Echo API. Use /ip for IP, /geo for IP + location.");
+  res.send("API is Running. Use /ip for IP, /geo for IP + location.");
 });
 
 app.listen(PORT, () => {
