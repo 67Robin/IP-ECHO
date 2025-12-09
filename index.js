@@ -2,10 +2,9 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// if later you put this behind a proxy (nginx, cloud, etc)
+// Trust proxy so we can get real client IP when behind nginx / cloud
 app.set("trust proxy", true);
 
-// helper to get client IP
 function getClientIp(req) {
   const xf = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
 
@@ -19,17 +18,57 @@ function getClientIp(req) {
   );
 }
 
-//  this is the route you are curling: /ip
+// ---------- /ip : just IP ----------
 app.get("/ip", (req, res) => {
   const ip = getClientIp(req);
   res.json({ ip });
 });
 
-// Optional root route so http://localhost:3000 works too
+// ---------- /geo : IP + location ----------
+app.get("/geo", async (req, res) => {
+  const ip = getClientIp(req);
+
+  if (!ip) {
+    return res.status(400).json({ error: "Could not determine client IP" });
+  }
+
+  try {
+    // use ip-api.com (free, no auth for basic use)
+    const response = await fetch(`http://ip-api.com/json/${ip}`);
+    const data = await response.json();
+
+    if (data.status !== "success") {
+      return res.status(500).json({
+        ip,
+        error: "Geo lookup failed",
+        raw: data,
+      });
+    }
+
+    return res.json({
+      ip,
+      location: {
+        country: data.country,
+        countryCode: data.countryCode,
+        region: data.regionName,
+        city: data.city,
+        lat: data.lat,
+        lon: data.lon,
+        timezone: data.timezone,
+        isp: data.isp,
+      },
+    });
+  } catch (err) {
+    console.error("Geo error:", err);
+    return res.status(500).json({ ip, error: "Geo service error" });
+  }
+});
+
+// Root (info)
 app.get("/", (req, res) => {
-  res.send("IP Echo API is running. Use /ip to get your IP.");
+  res.send("IP Echo API. Use /ip for IP, /geo for IP + location.");
 });
 
 app.listen(PORT, () => {
-  console.log(`IP Echo API running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
